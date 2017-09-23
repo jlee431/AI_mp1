@@ -23,6 +23,12 @@ class State:
 				s = s + '0'
 		return s
 
+def IsInFrontier(frontier, state):
+	for i in frontier:
+		if (state.toString() == i.toString()):
+			return True
+	return False
+
 
 maze_file = open(sys.argv[1], 'r')
 
@@ -81,39 +87,147 @@ while frontier:
 	# Check all four directions
 	char = maze[current_state.y_pos-1][current_state.x_pos]
 	if(char == ' '):
-		frontier.append(State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left, list(current_state.eaten_list), current_state))
+		new_state = State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left, list(current_state.eaten_list), current_state)
+		if(not(IsInFrontier(frontier, new_state))):
+			frontier.append(new_state)
 	elif(char == '.'):
 		l = list(current_state.eaten_list)
 		i = dots.index((current_state.x_pos, current_state.y_pos - 1))
 		l[i] = True
-		frontier.append(State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left - 1, l, current_state))
+		new_state = State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left - 1, l, current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
 
 	char = maze[current_state.y_pos][current_state.x_pos + 1]
 	if(char == ' '):
-		frontier.append(State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state))
+		new_state = State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
 	elif(char == '.'):
 		l = list(current_state.eaten_list)
 		i = dots.index((current_state.x_pos + 1, current_state.y_pos))
 		l[i] = True
-		frontier.append(State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left - 1, l, current_state))
+		new_state = State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left - 1, l, current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
 
 	char = maze[current_state.y_pos + 1][current_state.x_pos]
 	if(char == ' '):
-		frontier.append(State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left, list(current_state.eaten_list), current_state))
+		new_state = State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left, list(current_state.eaten_list), current_state)
+		if(not IsInFrontier(frontier, new_state)):	
+			frontier.append(new_state)
 	elif(char == '.'):
 		l = list(current_state.eaten_list)
 		i = dots.index((current_state.x_pos, current_state.y_pos + 1))
 		l[i] = True
-		frontier.append(State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left - 1, l, current_state))
+		new_state = State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left - 1, l, current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
 
 	char = maze[current_state.y_pos][current_state.x_pos - 1]
 	if(char == ' '):
-		frontier.append(State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state))
+		new_state = State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state)
+		if(not IsInFrontier(frontier,new_state)):
+			frontier.append(new_state)
 	elif(char == '.'):
 		l = list(current_state.eaten_list)
 		i = dots.index((current_state.x_pos - 1, current_state.y_pos))
 		l[i] = True
-		frontier.append(State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left - 1, l, current_state))
+		new_state = State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left - 1, l, current_state)
+		if(not IsInFrontier(frontier,new_state)):
+			frontier.append(new_state)
+
+for line in maze:
+	for c in line:
+		sys.stdout.write(c)
+	print('')
+
+print("\n\n\n" + "BFS Search \n")
+
+maze_file = open(sys.argv[1], 'r')
+maze = []
+for line in maze_file:
+	maze.append(list(line)[:len(line)-1])
+
+frontier = []
+prev_states = {}
+
+# Add initial state
+
+frontier.append(State(player_start_x, player_start_y, len(dots), [False]*len(dots)))
+
+# BFS Search
+while frontier:
+	# Get the next state
+	current_state = frontier.pop(0)
+
+	# Check if current state is goal state
+	if(not current_state.dots_left):
+		print("Goal Found!!!")
+		while current_state:
+			maze[current_state.y_pos][current_state.x_pos] = '.'
+			current_state = current_state.parent
+		break
+
+	# Check for repeated state
+	if(current_state.toString() in prev_states):
+		continue
+
+	# Expand current state
+	prev_states[current_state.toString()] = True
+
+	# Check all four directions
+	char = maze[current_state.y_pos-1][current_state.x_pos]
+	if(char == ' '):
+		new_state = State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left, list(current_state.eaten_list), current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
+	elif(char == '.'):
+		l = list(current_state.eaten_list)
+		i = dots.index((current_state.x_pos, current_state.y_pos - 1))
+		l[i] = True
+		new_state = State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left - 1, l, current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
+
+	char = maze[current_state.y_pos][current_state.x_pos + 1]
+	if(char == ' '):
+		new_state = State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
+	elif(char == '.'):
+		l = list(current_state.eaten_list)
+		i = dots.index((current_state.x_pos + 1, current_state.y_pos))
+		l[i] = True
+		new_state = State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left - 1, l, current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
+
+	char = maze[current_state.y_pos + 1][current_state.x_pos]
+	if(char == ' '):
+		new_state = State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left, list(current_state.eaten_list), current_state)
+		if(not IsInFrontier(frontier, new_state)):	
+			frontier.append(new_state)
+	elif(char == '.'):
+		l = list(current_state.eaten_list)
+		i = dots.index((current_state.x_pos, current_state.y_pos + 1))
+		l[i] = True
+		new_state = State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left - 1, l, current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
+
+	char = maze[current_state.y_pos][current_state.x_pos - 1]
+	if(char == ' '):
+		new_state = State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state)
+		if(not IsInFrontier(frontier,new_state)):
+			frontier.append(new_state)
+	elif(char == '.'):
+		l = list(current_state.eaten_list)
+		i = dots.index((current_state.x_pos - 1, current_state.y_pos))
+		l[i] = True
+		new_state = State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left - 1, l, current_state)
+		if(not IsInFrontier(frontier, new_state)):
+			frontier.append(new_state)
 
 for line in maze:
 	for c in line:
