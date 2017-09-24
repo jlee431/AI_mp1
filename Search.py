@@ -1,10 +1,6 @@
 import sys
-import Queue
-
-if(len(sys.argv) !=2):
-	print("USAGE: Search.py mazefile")
-	sys.exit()
-
+from Frontiers import *
+from State import *
 
 class State:
 
@@ -24,23 +20,19 @@ class State:
 				s = s + '0'
 		return s
 
-def IsInFrontier(frontier, state):
-	for i in frontier:
-		if (state.toString() == i.toString()):
-			return True
-	return False
+	def calcHeuristic(self):
+		x_dist = abs(dots[0][0] - self.x_pos)
+		y_dist = abs(dots[0][1] - self.y_pos)
+		return x_dist + y_dist
 
-def GreedyIsInFrontier(frontier,state):	
-	for i in frontier:
-		if (state.toString() == i[1].toString()):
-			return True
-	return False
+	def __lt__(self, other):
+		return self.calcHeuristic() < other.calcHeuristic()
 
-def CalcManDist(state):
-	x_dist = abs(dots[0][0] - state.x_pos)
-	y_dist = abs(dots[0][1] - state.y_pos)
-	return x_dist + y_dist
+	def __gt__(self, other):
+		return self.calcHeuristic() > other.calcHeuristic()
 
+	def __eq__(self, other):
+		return self.calcHeuristic() == other.calcHeuristic()
 
 actions = [(-1,0),(0,-1),(1,0),(0,1)]
 
@@ -58,11 +50,25 @@ def DoAction(state,action):
 		return State(new_x,new_y, state.dots_left - 1, l, state)
 	return None
 
+if(len(sys.argv) !=3):
+	print("USAGE: Search.py mazefile search")
+	sys.exit()
+
 maze_file = open(sys.argv[1], 'r')
 
 maze = []
 for line in maze_file:
 	maze.append(list(line)[:len(line)-1])
+
+if(sys.argv[2].lower() == 'dfs'):
+	frontier = FrontierDFS()
+elif(sys.argv[2].lower() == 'bfs'):
+	frontier = FrontierBFS()
+elif(sys.argv[2].lower() == 'greedy'):
+	frontier = FrontierGreedy()
+else:
+	print("Unrecognized search: " + sys.argv[2])
+	sys.exit()
 
 for line in maze:
 	for c in line:
@@ -84,19 +90,16 @@ for row in range(len(maze)):
 print('Player pos: ' + str(player_start_x) + ', ' + str(player_start_y))
 print('Dot pos: ' + str(dots[0][0]) + ', ' + str(dots[0][1]))
 
-
-frontier = []
 prev_states = {}
 
 # Add initial state
-
-frontier.append(State(player_start_x, player_start_y, len(dots), [False]*len(dots)))
+start_state = State(player_start_x, player_start_y, len(dots), [False]*len(dots))
+frontier.addState(start_state)
 
 # Start Search
-
-while frontier:
+while not frontier.isEmpty():
 	# Get the next state
-	current_state = frontier.pop()
+	current_state = frontier.getState()
 
 	# Check if current state is goal state
 	if(not current_state.dots_left):
@@ -115,101 +118,11 @@ while frontier:
 	# Check all four directions
 	for a in actions:
 		new_state = DoAction(current_state, a)
-		if(new_state != None and (not IsInFrontier(frontier, new_state))):
-			frontier.append(new_state)		
+		if(new_state is not None):
+			frontier.addState(new_state)
 
 for line in maze:
 	for c in line:
 		sys.stdout.write(c)
 	print('')
 
-print("\n\n\n" + "BFS Search \n")
-
-maze_file = open(sys.argv[1], 'r')
-maze = []
-for line in maze_file:
-	maze.append(list(line)[:len(line)-1])
-
-frontier = []
-prev_states = {}
-
-# Add initial state
-
-frontier.append(State(player_start_x, player_start_y, len(dots), [False]*len(dots)))
-
-# BFS Search
-while frontier:
-	# Get the next state
-	current_state = frontier.pop(0)
-
-	# Check if current state is goal state
-	if(not current_state.dots_left):
-		print("Goal Found!!!")
-		while current_state:
-			maze[current_state.y_pos][current_state.x_pos] = '.'
-			current_state = current_state.parent
-		break
-
-	# Check for repeated state
-	if(current_state.toString() in prev_states):
-		continue
-
-	# Expand current state
-	prev_states[current_state.toString()] = True
-
-	# Check all four directions
-	for a in actions:
-		new_state = DoAction(current_state, a)
-		if(new_state != None and (not IsInFrontier(frontier, new_state))):
-			frontier.append(new_state)
-
-for line in maze:
-	for c in line:
-		sys.stdout.write(c)
-	print('')
-
-# Calculate Manhattan Distance	
-
-maze_file = open(sys.argv[1], 'r')
-maze = []
-for line in maze_file:
-	maze.append(list(line)[:len(line)-1])
-
-
-frontier = Queue.PriorityQueue()
-prev_states = {}
-
-# Add initial state
-start = State(player_start_x, player_start_y, len(dots), [False]*len(dots))
-frontier.put((CalcManDist(start), start))
-
-while frontier:
-	# Get the next state
-	current_state = frontier.get()[1]
-
-	# Check if current state is goal state
-	if(not current_state.dots_left):
-		print("Goal Found!!!")
-		while current_state:
-			maze[current_state.y_pos][current_state.x_pos] = '.'
-			current_state = current_state.parent
-		break
-
-	# Check for repeated state
-	if(current_state.toString() in prev_states):
-		continue
-
-	# Expand current state
-	prev_states[current_state.toString()] = True
-
-	# Check all four directions
-	for a in actions:
-		new_state = DoAction(current_state, a)
-		if(new_state != None and (not GreedyIsInFrontier(frontier, new_state))):
-			frontier.put((CalcManDist(new_state),new_state))
-
-
-for line in maze:
-	for c in line:
-		sys.stdout.write(c)
-	print('')
