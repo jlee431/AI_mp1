@@ -1,8 +1,9 @@
 import sys
+import Queue
 
 if(len(sys.argv) !=2):
 	print("USAGE: Search.py mazefile")
-
+	sys.exit()
 
 
 class State:
@@ -29,6 +30,18 @@ def IsInFrontier(frontier, state):
 			return True
 	return False
 
+def GreedyIsInFrontier(frontier,state):	
+	for i in frontier:
+		if (state.toString() == i[1].toString()):
+			return True
+	return False
+
+def CalcManDist(state):
+	x_dist = abs(dots[0][0] - state.x_pos)
+	y_dist = abs(dots[0][1] - state.y_pos)
+	return x_dist + y_dist
+
+
 actions = [(-1,0),(0,-1),(1,0),(0,1)]
 
 def DoAction(state,action):
@@ -42,7 +55,7 @@ def DoAction(state,action):
 		l = list(state.eaten_list)
 		i = dots.index((new_x, new_y))
 		l[i] = True
-		return State(new_x,new_y, state.dots - 1, l, state)
+		return State(new_x,new_y, state.dots_left - 1, l, state)
 	return None
 
 maze_file = open(sys.argv[1], 'r')
@@ -149,6 +162,52 @@ while frontier:
 		new_state = DoAction(current_state, a)
 		if(new_state != None and (not IsInFrontier(frontier, new_state))):
 			frontier.append(new_state)
+
+for line in maze:
+	for c in line:
+		sys.stdout.write(c)
+	print('')
+
+# Calculate Manhattan Distance	
+
+maze_file = open(sys.argv[1], 'r')
+maze = []
+for line in maze_file:
+	maze.append(list(line)[:len(line)-1])
+
+
+frontier = Queue.PriorityQueue()
+prev_states = {}
+
+# Add initial state
+start = State(player_start_x, player_start_y, len(dots), [False]*len(dots))
+frontier.put((CalcManDist(start), start))
+
+while frontier:
+	# Get the next state
+	current_state = frontier.get()[1]
+
+	# Check if current state is goal state
+	if(not current_state.dots_left):
+		print("Goal Found!!!")
+		while current_state:
+			maze[current_state.y_pos][current_state.x_pos] = '.'
+			current_state = current_state.parent
+		break
+
+	# Check for repeated state
+	if(current_state.toString() in prev_states):
+		continue
+
+	# Expand current state
+	prev_states[current_state.toString()] = True
+
+	# Check all four directions
+	for a in actions:
+		new_state = DoAction(current_state, a)
+		if(new_state != None and (not GreedyIsInFrontier(frontier, new_state))):
+			frontier.put((CalcManDist(new_state),new_state))
+
 
 for line in maze:
 	for c in line:
