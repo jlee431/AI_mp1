@@ -29,6 +29,21 @@ def IsInFrontier(frontier, state):
 			return True
 	return False
 
+actions = [(-1,0),(0,-1),(1,0),(0,1)]
+
+def DoAction(state,action):
+	new_x = state.x_pos + action[0]
+	new_y = state.y_pos + action[1]
+
+	char = maze[new_y][new_x]
+	if(char == ' '):
+		return State(new_x, new_y, state.dots_left, list(state.eaten_list), state)
+	elif(char == '.'):
+		l = list(state.eaten_list)
+		i = dots.index((new_x, new_y))
+		l[i] = True
+		return State(new_x,new_y, state.dots - 1, l, state)
+	return None
 
 maze_file = open(sys.argv[1], 'r')
 
@@ -85,57 +100,10 @@ while frontier:
 	prev_states[current_state.toString()] = True
 
 	# Check all four directions
-	char = maze[current_state.y_pos-1][current_state.x_pos]
-	if(char == ' '):
-		new_state = State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left, list(current_state.eaten_list), current_state)
-		if(not(IsInFrontier(frontier, new_state))):
-			frontier.append(new_state)
-	elif(char == '.'):
-		l = list(current_state.eaten_list)
-		i = dots.index((current_state.x_pos, current_state.y_pos - 1))
-		l[i] = True
-		new_state = State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left - 1, l, current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-
-	char = maze[current_state.y_pos][current_state.x_pos + 1]
-	if(char == ' '):
-		new_state = State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-	elif(char == '.'):
-		l = list(current_state.eaten_list)
-		i = dots.index((current_state.x_pos + 1, current_state.y_pos))
-		l[i] = True
-		new_state = State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left - 1, l, current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-
-	char = maze[current_state.y_pos + 1][current_state.x_pos]
-	if(char == ' '):
-		new_state = State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left, list(current_state.eaten_list), current_state)
-		if(not IsInFrontier(frontier, new_state)):	
-			frontier.append(new_state)
-	elif(char == '.'):
-		l = list(current_state.eaten_list)
-		i = dots.index((current_state.x_pos, current_state.y_pos + 1))
-		l[i] = True
-		new_state = State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left - 1, l, current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-
-	char = maze[current_state.y_pos][current_state.x_pos - 1]
-	if(char == ' '):
-		new_state = State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state)
-		if(not IsInFrontier(frontier,new_state)):
-			frontier.append(new_state)
-	elif(char == '.'):
-		l = list(current_state.eaten_list)
-		i = dots.index((current_state.x_pos - 1, current_state.y_pos))
-		l[i] = True
-		new_state = State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left - 1, l, current_state)
-		if(not IsInFrontier(frontier,new_state)):
-			frontier.append(new_state)
+	for a in actions:
+		new_state = DoAction(current_state, a)
+		if(new_state != None and (not IsInFrontier(frontier, new_state))):
+			frontier.append(new_state)		
 
 for line in maze:
 	for c in line:
@@ -177,56 +145,9 @@ while frontier:
 	prev_states[current_state.toString()] = True
 
 	# Check all four directions
-	char = maze[current_state.y_pos-1][current_state.x_pos]
-	if(char == ' '):
-		new_state = State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left, list(current_state.eaten_list), current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-	elif(char == '.'):
-		l = list(current_state.eaten_list)
-		i = dots.index((current_state.x_pos, current_state.y_pos - 1))
-		l[i] = True
-		new_state = State(current_state.x_pos, current_state.y_pos - 1, current_state.dots_left - 1, l, current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-
-	char = maze[current_state.y_pos][current_state.x_pos + 1]
-	if(char == ' '):
-		new_state = State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-	elif(char == '.'):
-		l = list(current_state.eaten_list)
-		i = dots.index((current_state.x_pos + 1, current_state.y_pos))
-		l[i] = True
-		new_state = State(current_state.x_pos + 1, current_state.y_pos, current_state.dots_left - 1, l, current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-
-	char = maze[current_state.y_pos + 1][current_state.x_pos]
-	if(char == ' '):
-		new_state = State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left, list(current_state.eaten_list), current_state)
-		if(not IsInFrontier(frontier, new_state)):	
-			frontier.append(new_state)
-	elif(char == '.'):
-		l = list(current_state.eaten_list)
-		i = dots.index((current_state.x_pos, current_state.y_pos + 1))
-		l[i] = True
-		new_state = State(current_state.x_pos, current_state.y_pos + 1, current_state.dots_left - 1, l, current_state)
-		if(not IsInFrontier(frontier, new_state)):
-			frontier.append(new_state)
-
-	char = maze[current_state.y_pos][current_state.x_pos - 1]
-	if(char == ' '):
-		new_state = State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left, list(current_state.eaten_list), current_state)
-		if(not IsInFrontier(frontier,new_state)):
-			frontier.append(new_state)
-	elif(char == '.'):
-		l = list(current_state.eaten_list)
-		i = dots.index((current_state.x_pos - 1, current_state.y_pos))
-		l[i] = True
-		new_state = State(current_state.x_pos - 1, current_state.y_pos, current_state.dots_left - 1, l, current_state)
-		if(not IsInFrontier(frontier, new_state)):
+	for a in actions:
+		new_state = DoAction(current_state, a)
+		if(new_state != None and (not IsInFrontier(frontier, new_state))):
 			frontier.append(new_state)
 
 for line in maze:
