@@ -1,14 +1,15 @@
 import sys
 from Frontiers import *
-from State import *
 
 class State:
+	compareFunc = 0
 
-	def __init__(self, x = 0, y = 0, d = 0, el = [], p = None):
+	def __init__(self, x = 0, y = 0, d = 0, el = [], pc = 0, p = None):
 		self.x_pos = x
 		self.y_pos = y
 		self.dots_left = d
 		self.eaten_list = el
+		self.path_cost = pc
 		self.parent = p
 
 	def toString(self):
@@ -25,14 +26,26 @@ class State:
 		y_dist = abs(dots[0][1] - self.y_pos)
 		return x_dist + y_dist
 
+	def calcEvalFunc(self):
+		return self.calcHeuristic() + self.path_cost
+
 	def __lt__(self, other):
-		return self.calcHeuristic() < other.calcHeuristic()
+		if State.compareFunc:
+			return self.calcEvalFunc() < other.calcEvalFunc()
+		else:
+			return self.calcHeuristic() < other.calcHeuristic()
 
 	def __gt__(self, other):
-		return self.calcHeuristic() > other.calcHeuristic()
+		if State.compareFunc:
+			return self.calcEvalFunc() > other.calcEvalFunc()
+		else:
+			return self.calcHeuristic() > other.calcHeuristic()
 
 	def __eq__(self, other):
-		return self.calcHeuristic() == other.calcHeuristic()
+		if State.compareFunc:
+			return self.calcEvalFunc() == other.calcEvalFunc()
+		else:
+			return self.calcHeuristic() == other.calcHeuristic()
 
 actions = [(-1,0),(0,-1),(1,0),(0,1)]
 
@@ -42,12 +55,12 @@ def DoAction(state,action):
 
 	char = maze[new_y][new_x]
 	if(char == ' '):
-		return State(new_x, new_y, state.dots_left, list(state.eaten_list), state)
+		return State(new_x, new_y, state.dots_left, list(state.eaten_list), state.path_cost + 1, state)
 	elif(char == '.'):
 		l = list(state.eaten_list)
 		i = dots.index((new_x, new_y))
 		l[i] = True
-		return State(new_x,new_y, state.dots_left - 1, l, state)
+		return State(new_x,new_y, state.dots_left - 1, l, state.path_cost + 1, state)
 	return None
 
 if(len(sys.argv) !=3):
@@ -66,6 +79,10 @@ elif(sys.argv[2].lower() == 'bfs'):
 	frontier = FrontierBFS()
 elif(sys.argv[2].lower() == 'greedy'):
 	frontier = FrontierGreedy()
+	State.compareFunc = 0
+elif(sys.argv[2].lower() == 'a*'):
+	frontier = FrontierAStar()
+	State.compareFunc = 1
 else:
 	print("Unrecognized search: " + sys.argv[2])
 	sys.exit()
@@ -87,14 +104,10 @@ for row in range(len(maze)):
 			player_start_y = row
 			player_start_x = col
 
-print('Player pos: ' + str(player_start_x) + ', ' + str(player_start_y))
-print('Dot pos: ' + str(dots[0][0]) + ', ' + str(dots[0][1]))
-
-prev_states = {}
-
 # Add initial state
 start_state = State(player_start_x, player_start_y, len(dots), [False]*len(dots))
 frontier.addState(start_state)
+nodes_expanded = 0
 
 # Start Search
 while not frontier.isEmpty():
@@ -103,17 +116,14 @@ while not frontier.isEmpty():
 
 	# Check if current state is goal state
 	if(not current_state.dots_left):
+		path_cost = current_state.path_cost
 		while current_state:
 			maze[current_state.y_pos][current_state.x_pos] = '.'
 			current_state = current_state.parent
 		break
 
-	# Check for repeated state
-	if(current_state.toString() in prev_states):
-		continue
-
-	# Expand current state
-	prev_states[current_state.toString()] = True
+	# Update expanded state counter
+	nodes_expanded = nodes_expanded + 1
 
 	# Check all four directions
 	for a in actions:
@@ -126,3 +136,5 @@ for line in maze:
 		sys.stdout.write(c)
 	print('')
 
+print('Path cost: ' + str(path_cost))
+print('Nodes expanded: ' + str(nodes_expanded))
