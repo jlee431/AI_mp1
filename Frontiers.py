@@ -46,6 +46,10 @@ class FrontierBFS:
 			return None
 
 	def addState(self, state):
+		if(state.path_cost == 150):
+			print('Attempted adding state with path cost 150')
+			print('X: ' + str(state.x_pos))
+			print('Y: ' + str(state.y_pos))
 		if(not self.isStateRepeated(state)):
 			self.f.append(state)
 
@@ -59,6 +63,16 @@ class FrontierBFS:
 
 	def isEmpty(self):
 		return not self.f
+
+	def dump(self):
+		print('Frontier:')
+		for s in self.f:
+			if(s.path_cost == 150):
+				print('X: ' + str(s.x_pos))
+				print('Y: ' + str(s.y_pos))
+		#print('Explored:')
+		#for s in self.explored:
+		#	print(s)
 
 # Greedy
 class FrontierGreedy:
