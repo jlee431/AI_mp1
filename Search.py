@@ -4,6 +4,7 @@ from Frontiers import *
 
 class State:
 	compareFunc = 0
+	heuristic = 0
 
 	def __init__(self, x = 0, y = 0, el = [], pc = 0, p = None):
 		self.x_pos = x
@@ -22,9 +23,18 @@ class State:
 		return s
 
 	def calcHeuristic(self):
-		x_dist = abs(dots[0][0] - self.x_pos)
-		y_dist = abs(dots[0][1] - self.y_pos)
-		return x_dist + y_dist
+		if(State.heuristic == 0):
+			x_dist = abs(dots[0][0] - self.x_pos)
+			y_dist = abs(dots[0][1] - self.y_pos)
+			return x_dist + y_dist
+		else:
+			min_dist = len(maze) + len(maze[0])
+			for dot in dots:
+				x_dist = abs(dot[0] - self.x_pos)
+				y_dist = abs(dot[1] - self.y_pos)
+				if(x_dist + y_dist < min_dist):
+					min_dist = x_dist + y_dist
+			return min_dist
 
 	def calcEvalFunc(self):
 		return self.calcHeuristic() + self.path_cost
@@ -111,6 +121,10 @@ for row in range(len(maze)):
 		elif(maze[row][col] == 'P'):
 			player_start_y = row
 			player_start_x = col
+
+# Set heuristic
+if(len(dots) > 1):
+	State.heuristic = 1
 
 # Add initial state
 start_state = State(player_start_x, player_start_y, [False]*len(dots))

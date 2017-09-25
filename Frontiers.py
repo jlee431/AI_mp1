@@ -46,10 +46,6 @@ class FrontierBFS:
 			return None
 
 	def addState(self, state):
-		if(state.path_cost == 150):
-			print('Attempted adding state with path cost 150')
-			print('X: ' + str(state.x_pos))
-			print('Y: ' + str(state.y_pos))
 		if(not self.isStateRepeated(state)):
 			self.f.append(state)
 
