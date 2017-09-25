@@ -1,13 +1,13 @@
 import sys
+import string
 from Frontiers import *
 
 class State:
 	compareFunc = 0
 
-	def __init__(self, x = 0, y = 0, d = 0, el = [], pc = 0, p = None):
+	def __init__(self, x = 0, y = 0, el = [], pc = 0, p = None):
 		self.x_pos = x
 		self.y_pos = y
-		self.dots_left = d
 		self.eaten_list = el
 		self.path_cost = pc
 		self.parent = p
@@ -28,6 +28,12 @@ class State:
 
 	def calcEvalFunc(self):
 		return self.calcHeuristic() + self.path_cost
+
+	def isGoal(self):
+		for i in self.eaten_list:
+			if(not i):
+				return False
+		return True
 
 	def __lt__(self, other):
 		if State.compareFunc:
@@ -54,13 +60,13 @@ def DoAction(state,action):
 	new_y = state.y_pos + action[1]
 
 	char = maze[new_y][new_x]
-	if(char == ' '):
-		return State(new_x, new_y, state.dots_left, list(state.eaten_list), state.path_cost + 1, state)
+	if(char == ' ' or char == 'P'):
+		return State(new_x, new_y, list(state.eaten_list), state.path_cost + 1, state)
 	elif(char == '.'):
-		l = list(state.eaten_list)
+		l = state.eaten_list[:]
 		i = dots.index((new_x, new_y))
 		l[i] = True
-		return State(new_x,new_y, state.dots_left - 1, l, state.path_cost + 1, state)
+		return State(new_x,new_y, l, state.path_cost + 1, state)
 	return None
 
 if(len(sys.argv) !=3):
@@ -96,6 +102,8 @@ dots = []
 player_start_x = 0
 player_start_y = 0
 
+ans = string.digits + string.ascii_letters 
+
 for row in range(len(maze)):
 	for col in range(len(maze[row])):
 		if(maze[row][col] == '.'):
@@ -104,10 +112,8 @@ for row in range(len(maze)):
 			player_start_y = row
 			player_start_x = col
 
-print('Dot location: ' + str(dots[0][0]) + ', ' + str(dots[0][1]))
-
 # Add initial state
-start_state = State(player_start_x, player_start_y, len(dots), [False]*len(dots))
+start_state = State(player_start_x, player_start_y, [False]*len(dots))
 frontier.addState(start_state)
 nodes_expanded = 0
 
@@ -115,15 +121,20 @@ nodes_expanded = 0
 while not frontier.isEmpty():
 	# Get the next state
 	current_state = frontier.getState()
-	if(150 == current_state.path_cost):
-		print('X: ' + str(current_state.x_pos) + '  Y: ' + str(current_state.y_pos))
+	
 
 	# Check if current state is goal state
-	if(not current_state.dots_left):
+	if(current_state.isGoal()):
 		path_cost = current_state.path_cost
-		n = 0
+		target = len(dots) - 1
+
 		while current_state:
-			maze[current_state.y_pos][current_state.x_pos] = '.'
+			if(len(dots) == 1):
+				maze[current_state.y_pos][current_state.x_pos] = '.'
+			elif(maze[current_state.y_pos][current_state.x_pos] == '.'):
+				maze[current_state.y_pos][current_state.x_pos] = ans[target]
+				target = target - 1
+
 			current_state = current_state.parent
 		break
 
