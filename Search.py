@@ -13,7 +13,7 @@ class State:
 		self.parent = p
 
 	def toString(self):
-		s = str(self.x_pos) + str(self.y_pos)
+		s = str(self.x_pos) + ' ' + str(self.y_pos) + ' '
 		for e in self.eaten_list:
 			if(e):
 				s = s + '1'
@@ -123,21 +123,9 @@ while not frontier.isEmpty():
 		path_cost = current_state.path_cost
 		n = 0
 		while current_state:
-			#if(maze[current_state.y_pos][current_state.x_pos] not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']):
-			#	maze[current_state.y_pos][current_state.x_pos] = '.'
-			maze[current_state.y_pos][current_state.x_pos] = str(n)
-			n = (n + 1) % 10
+			maze[current_state.y_pos][current_state.x_pos] = '.'
 			current_state = current_state.parent
 		break
-
-	ch = maze[current_state.y_pos][current_state.x_pos]
-	maze[current_state.y_pos][current_state.x_pos] = 'P'
-	for line in maze:
-		for c in line:
-			sys.stdout.write(c)
-		print('')
-
-	input()
 
 	# Update expanded state counter
 	nodes_expanded = nodes_expanded + 1
@@ -146,14 +134,7 @@ while not frontier.isEmpty():
 	for a in actions:
 		new_state = DoAction(current_state, a)
 		if(new_state is not None):
-			'''if(new_state.path_cost == 150):
-				s = new_state
-				for i in range(9):
-					maze[s.y_pos][s.x_pos] = str(i)
-					s = s.parent'''
 			frontier.addState(new_state)
-
-	maze[current_state.y_pos][current_state.x_pos] = ch
 
 for line in maze:
 	for c in line:
@@ -162,5 +143,3 @@ for line in maze:
 
 print('Path cost: ' + str(path_cost))
 print('Nodes expanded: ' + str(nodes_expanded))
-
-#frontier.dump()
