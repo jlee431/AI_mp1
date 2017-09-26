@@ -6,17 +6,18 @@ class State:
 	compareFunc = 0
 	heuristic = 0
 
-	def __init__(self, x = 0, y = 0, el = [], pc = 0, p = None):
+	def __init__(self, x = 0, y = 0, d = 0, el = {}, pc = 0, p = None):
 		self.x_pos = x
 		self.y_pos = y
+		self.dots_left = d
 		self.eaten_list = el
 		self.path_cost = pc
 		self.parent = p
 
 	def toString(self):
 		s = str(self.x_pos) + ' ' + str(self.y_pos) + ' '
-		for e in self.eaten_list:
-			if(e):
+		for key, value in self.eaten_list:
+			if(value == True):
 				s = s + '1'
 			else:
 				s = s + '0'
@@ -24,26 +25,27 @@ class State:
 
 	def calcHeuristic(self):
 		if(State.heuristic == 0):
-			x_dist = abs(dots[0][0] - self.x_pos)
-			y_dist = abs(dots[0][1] - self.y_pos)
+			x_dist = abs(eaten_list.keys()[0][0] - self.x_pos)
+			y_dist = abs(eaten_list.keys()[0][1] - self.y_pos)
 			return x_dist + y_dist
-		else:
+		elif(State.heuristic == 1):
 			min_dist = len(maze) + len(maze[0])
-			for dot in dots:
+			for dot in eaten_list.keys():
 				x_dist = abs(dot[0] - self.x_pos)
 				y_dist = abs(dot[1] - self.y_pos)
 				if(x_dist + y_dist < min_dist):
 					min_dist = x_dist + y_dist
 			return min_dist
+		else:
+			return self.dots_left
 
 	def calcEvalFunc(self):
 		return self.calcHeuristic() + self.path_cost
 
 	def isGoal(self):
-		for i in self.eaten_list:
-			if(not i):
-				return False
-		return True
+		if(self.dots_left):
+			return False
+		return True;
 
 	def __lt__(self, other):
 		if State.compareFunc:
@@ -71,12 +73,14 @@ def DoAction(state,action):
 
 	char = maze[new_y][new_x]
 	if(char == ' ' or char == 'P'):
-		return State(new_x, new_y, list(state.eaten_list), state.path_cost + 1, state)
+		return State(new_x, new_y, state.dots_left, state.eaten_list.copy(), state.path_cost + 1, state)
 	elif(char == '.'):
-		l = state.eaten_list[:]
-		i = dots.index((new_x, new_y))
-		l[i] = True
-		return State(new_x,new_y, l, state.path_cost + 1, state)
+		dic = state.eaten_list.copy()
+		dots_left = state.dots_left
+		if(not dic[(new_x, new_y)]):
+			dots_left = dots_left - 1
+			dic[(new_x, new_y)] = True
+		return State(new_x,new_y, dots_left, dic, state.path_cost + 1, state)
 	return None
 
 if(len(sys.argv) !=3):
@@ -108,42 +112,45 @@ for line in maze:
 		sys.stdout.write(c)
 	print('')
 
-dots = []
-player_start_x = 0
-player_start_y = 0
-
 ans = string.digits + string.ascii_letters 
+
+start_state = State()
 
 for row in range(len(maze)):
 	for col in range(len(maze[row])):
 		if(maze[row][col] == '.'):
-			dots.append((col, row)) 
+			start_state.eaten_list[(col, row)] = False
+			start_state.dots_left = start_state.dots_left + 1
 		elif(maze[row][col] == 'P'):
-			player_start_y = row
-			player_start_x = col
+			start_state.y_pos = row
+			start_state.x_pos = col
+
+print("Dots left: " + str(start_state.dots_left))
+for d in start_state.eaten_list.keys():
+	print("Dot: " + str(d))
+print("Start state: " + start_state.toString())
 
 # Set heuristic
-if(len(dots) > 1):
-	State.heuristic = 1
+if(start_state.dots_left > 1):
+	State.heuristic = 2
 
 # Add initial state
-start_state = State(player_start_x, player_start_y, [False]*len(dots))
 frontier.addState(start_state)
 nodes_expanded = 0
+path_cost = 0
 
 # Start Search
 while not frontier.isEmpty():
 	# Get the next state
 	current_state = frontier.getState()
-	
 
 	# Check if current state is goal state
 	if(current_state.isGoal()):
 		path_cost = current_state.path_cost
-		target = len(dots) - 1
+		target = start_state.dots_left - 1
 
 		while current_state:
-			if(len(dots) == 1):
+			if(start_state.dots_left == 1):
 				maze[current_state.y_pos][current_state.x_pos] = '.'
 			elif(maze[current_state.y_pos][current_state.x_pos] == '.'):
 				maze[current_state.y_pos][current_state.x_pos] = ans[target]
