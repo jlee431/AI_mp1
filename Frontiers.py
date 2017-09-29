@@ -96,13 +96,18 @@ class FrontierGreedy:
 
 # A*
 class FrontierAStar:
+
+	heappush = heapq.heappush
+	heappop = heapq.heappop
+	heapify = heapq.heapify
+
 	def __init__(self):
 		self.f = []
 		self.explored = {}
 
 	def getState(self):
 		if(self.f):
-			s = heapq.heappop(self.f)
+			s = FrontierAStar.heappop(self.f)
 			self.explored[s.id] = True
 			return s
 		else:
@@ -117,13 +122,13 @@ class FrontierAStar:
 			i = self.f.index(state)
 			if self.f[i].path_cost > state.path_cost:
 				self.f[i] = state
-				heapq.heapify(self.f)
-				return
+				FrontierAStar.heapify(self.f)
+			return
 		except ValueError:
 			pass
 
 		# Add state to frontier
-		heapq.heappush(self.f, state)
+		FrontierAStar.heappush(self.f, state)
 
 	def isStateRepeated(self, state):
 		if(state.id in self.explored):
@@ -132,20 +137,13 @@ class FrontierAStar:
 			i = self.f.index(state)
 			if self.f[i].path_cost > state.path_cost:
 				self.f[i] = state
-				heapq.heapify(self.f)
+				FrontierAStar.heapify(self.f)
 				return True
 
 		except ValueError:
 			return False
 
 		return False
-		#for i, s in enumerate(self.f):
-		#	if(s.id == state.id):
-		#		if(s.path_cost > state.path_cost):
-		#			self.f[i] = state
-		#			heapq.heapify(self.f)
-		#		return True
-		#return False
 
 	def isEmpty(self):
 		return not self.f

@@ -1,6 +1,9 @@
 import sys
 import string
+import heapq
 from Frontiers import *
+
+
 
 class State:
 	compareFunc = 0
@@ -18,40 +21,63 @@ class State:
 		self.calcHeuristic()
 		self.id = str(x) + ' ' + str(y) + ' ' + str.join('', map(lambda x: str(x[0]), el))
 
+	def minSpanTree(self):
+		set_id = 0
+		num_edges = 0
+		dist = 0
+		num_nodes = self.dots_left + 1
+		sets = [None]*(num_nodes)
+		edges = []
+		nodes = [(self.x_pos,self.y_pos)]
+
+		for pair in self.eaten_list:
+			if(pair[0] == 0):
+				nodes.append(pair[1])
+
+		for a in range(num_nodes):
+			for b in range(a+1, num_nodes):
+				length = abs(nodes[a][0] - nodes[b][0]) + abs(nodes[a][1] - nodes[b][1])
+				heapq.heappush(edges, (length,(a,b)))
+
+		while num_edges < num_nodes - 1:
+			edge = heapq.heappop(edges)
+			a_in = edge[1][0]
+			b_in = edge[1][1]
+			a = sets[a_in]
+			b = sets[b_in]
+			if(a is None and b is None):
+				sets[a_in] = set_id
+				sets[b_in] = set_id
+				set_id = set_id + 1
+				dist = dist + edge[0]
+				num_edges = num_edges + 1
+				continue
+			if(a is None):
+				sets[a_in] = b
+				dist = dist + edge[0]
+				num_edges = num_edges + 1
+				continue
+			if(b is None):
+				sets[b_in] = a
+				dist = dist + edge[0]
+				num_edges = num_edges + 1
+				continue
+			if(a != b):
+				for i in range(num_nodes):
+					if(sets[i] == b):
+						sets[i] == a
+				dist = dist + edge[0]
+				num_edges = num_edges + 1
+
+		return dist
+
 	def calcHeuristic(self):
 		if(State.heuristic == 0):
 			x_dist = abs(self.eaten_list[0][1][0] - self.x_pos)
-			y_dist = abs(self.eaten_list[1][1][1] - self.y_pos)
+			y_dist = abs(self.eaten_list[0][1][1] - self.y_pos)
 			self.heuristic =  x_dist + y_dist
-		elif(State.heuristic == 1):
-			min_dist = len(maze) + len(maze[0])
-			for pair in self.eaten_list:
-				if(pair[0]):
-					x_dist = abs(pair[1][0] - self.x_pos)
-					y_dist = abs(pair[1][1] - self.y_pos)
-					if(x_dist + y_dist < min_dist):
-						min_dist = x_dist + y_dist
-			self.heuristic =  min_dist
-		elif(State.heuristic == 2):
-			self.heuristic =  self.dots_left
-		elif(State.heuristic == 3):
-			min_dist = len(maze) + len(maze[0])
-			for pair in self.eaten_list:
-				if(pair[0]):
-					x_dist = abs(pair[1][0] - self.x_pos)
-					y_dist = abs(dot[1][1] - self.y_pos)
-					if(x_dist + y_dist < min_dist):
-						min_dist = x_dist + y_dist
-			self.heuristic =  self.dots_left + min_dist - 1
 		else:
-			min_dist = len(maze) + len(maze[0])
-			for pair in self.eaten_list:
-				if(pair[0]):
-					x_dist = abs(pair[1][0] - self.x_pos)
-					y_dist = abs(pair[1][1] - self.y_pos)
-					if(x_dist + y_dist < min_dist):
-						min_dist = x_dist + y_dist
-			self.heuristic =  (self.dots_left * min_dist) / State.num_dots
+			self.heuristic =  self.minSpanTree()
 
 	def calcEvalFunc(self):
 		return self.heuristic + self.path_cost
@@ -92,8 +118,8 @@ def DoActions(state, actionList):
 			elist = state.eaten_list.copy()
 			dots_left = state.dots_left
 			for i in range(num_dots):
-				if(elist[i][0] and elist[i][1][0] == new_x and elist[i][1][1] == new_y):
-					elist[i] = (0, (new_x, new_y))
+				if(elist[i][0] == 0 and elist[i][1][0] == new_x and elist[i][1][1] == new_y):
+					elist[i] = (1, (new_x, new_y))
 					dots_left = dots_left - 1
 					break
 			stateList.append(State(new_x,new_y, dots_left, elist, state.path_cost + 1, state))
@@ -108,7 +134,10 @@ maze_file = open(sys.argv[1], 'r')
 
 maze = []
 for line in maze_file:
-	maze.append(list(line)[:len(line)-1])
+	line_list = list(line)
+	if(line_list[-1] == '\n'):
+		line_list.pop()
+	maze.append(line_list)
 
 option = sys.argv[2].lower()
 
@@ -141,20 +170,19 @@ x_pos = 0
 for row in range(len(maze)):
 	for col in range(len(maze[row])):
 		if(maze[row][col] == '.'):
-			dots.append((1, (col, row)))
+			dots.append((0, (col, row)))
 			num_dots = num_dots + 1
 		elif(maze[row][col] == 'P'):
 			y_pos = row
 			x_pos = col
 
-start_state = State(x_pos, y_pos, num_dots, dots)
-
 # Set heuristic
-if(start_state.dots_left > 1):
-	State.heuristic = 4
+if(num_dots > 1):
+	State.heuristic = 2
 	State.num_dots = num_dots
 
 # Add initial state
+start_state = State(x_pos, y_pos, num_dots, dots)
 frontier.addState(start_state)
 nodes_expanded = 0
 path_cost = 0
@@ -168,6 +196,17 @@ addState = frontier.addState
 while not isEmpty():
 	# Get the next state
 	current_state = getState()
+
+	'''for y in range(len(maze)):
+		for x in range(len(maze[row])):
+			if(y == current_state.y_pos and x == current_state.x_pos):
+				write('X')
+			else:
+				write(maze[y][x])
+		print('')
+
+	print("Heuristic: " + str(current_state.getHeuristic()))
+	input()'''
 
 	# Check if current state is goal state
 	if(current_state.isGoal()):
