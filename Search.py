@@ -92,8 +92,9 @@ def DoActions(state, actionList):
 			elist = state.eaten_list.copy()
 			dots_left = state.dots_left
 			for i in range(num_dots):
-				if(elist[i][1][0] == new_x and elist[i][1][1] == new_y):
+				if(elist[i][0] and elist[i][1][0] == new_x and elist[i][1][1] == new_y):
 					elist[i] = (0, (new_x, new_y))
+					dots_left = dots_left - 1
 					break
 			stateList.append(State(new_x,new_y, dots_left, elist, state.path_cost + 1, state))
 	
@@ -150,7 +151,7 @@ start_state = State(x_pos, y_pos, num_dots, dots)
 
 # Set heuristic
 if(start_state.dots_left > 1):
-	State.heuristic = 1
+	State.heuristic = 4
 	State.num_dots = num_dots
 
 # Add initial state
