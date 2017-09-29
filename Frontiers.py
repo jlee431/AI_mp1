@@ -11,7 +11,7 @@ class FrontierDFS:
 	def getState(self):
 		if(self.f):
 			s = self.f.pop()
-			self.explored[s.toString()] = True
+			self.explored[s.id] = True
 			return s
 		else:
 			return None
@@ -21,7 +21,7 @@ class FrontierDFS:
 			self.f.append(state)
 
 	def isStateRepeated(self, state):
-		if(state.toString() in self.explored):
+		if(state.id in self.explored):
 			return True
 		try:
 			self.f.index(s)
@@ -29,7 +29,7 @@ class FrontierDFS:
 		except ValueError:
 			return False
 		#for s in self.f:
-		#	if(s.toString() == state.toString()):
+		#	if(s.id == state.id):
 		#		return True
 		#return False
 
@@ -45,7 +45,7 @@ class FrontierBFS:
 	def getState(self):
 		if(self.f):
 			s = self.f.pop(0)
-			self.explored[s.toString()] = True
+			self.explored[s.id] = True
 			return s
 		else:
 			return None
@@ -55,10 +55,10 @@ class FrontierBFS:
 			self.f.append(state)
 
 	def isStateRepeated(self, state):
-		if(state.toString() in self.explored):
+		if(state.id in self.explored):
 			return True
 		for s in self.f:
-			if(s.toString() == state.toString()):
+			if(s.id == state.id):
 				return True
 		return False
 
@@ -74,7 +74,7 @@ class FrontierGreedy:
 	def getState(self):
 		if(self.f):
 			s = heapq.heappop(self.f)
-			self.explored[s.toString()] = True
+			self.explored[s.id] = True
 			return s
 		else:
 			return None
@@ -84,10 +84,10 @@ class FrontierGreedy:
 			heapq.heappush(self.f, state)
 
 	def isStateRepeated(self, state):
-		if(state.toString() in self.explored):
+		if(state.id in self.explored):
 			return True
 		for s in self.f:
-			if(s.toString() == state.toString()):
+			if(s.id == state.id):
 				return True
 		return False
 
@@ -103,7 +103,7 @@ class FrontierAStar:
 	def getState(self):
 		if(self.f):
 			s = heapq.heappop(self.f)
-			self.explored[s.toString()] = True
+			self.explored[s.id] = True
 			return s
 		else:
 			return None
@@ -111,7 +111,7 @@ class FrontierAStar:
 	def addState(self, state):
 
 		# Check for repeats
-		if(state.toString() in self.explored):
+		if(state.id in self.explored):
 			return
 		try:
 			i = self.f.index(state)
@@ -126,7 +126,7 @@ class FrontierAStar:
 		heapq.heappush(self.f, state)
 
 	def isStateRepeated(self, state):
-		if(state.toString() in self.explored):
+		if(state.id in self.explored):
 			return True
 		try:
 			i = self.f.index(state)
@@ -140,7 +140,7 @@ class FrontierAStar:
 
 		return False
 		#for i, s in enumerate(self.f):
-		#	if(s.toString() == state.toString()):
+		#	if(s.id == state.id):
 		#		if(s.path_cost > state.path_cost):
 		#			self.f[i] = state
 		#			heapq.heapify(self.f)

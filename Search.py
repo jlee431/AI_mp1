@@ -5,8 +5,9 @@ from Frontiers import *
 class State:
 	compareFunc = 0
 	heuristic = 0
+	num_dots = 0
 
-	def __init__(self, x = 0, y = 0, d = 0, el = {}, pc = 0, p = None):
+	def __init__(self, x, y, d, el, pc = 0, p = None):
 		self.x_pos = x
 		self.y_pos = y
 		self.dots_left = d
@@ -14,42 +15,46 @@ class State:
 		self.path_cost = pc
 		self.parent = p
 
-	def toString(self):
-		s = str(self.x_pos) + ' ' + str(self.y_pos) + ' '
-		s = s + str.join('', map(lambda x: str(x),self.eaten_list.values()))
-		#for key, value in self.eaten_list.items():
-		#	if(value):
-		#		s = s + '1'
-		#	else:
-		#		s = s + '0'
-		return s
+		self.calcHeuristic()
+		self.id = str(x) + ' ' + str(y) + ' ' + str.join('', map(lambda x: str(x[0]), el))
 
 	def calcHeuristic(self):
 		if(State.heuristic == 0):
-			x_dist = abs(self.eaten_list.keys()[0][0] - self.x_pos)
-			y_dist = abs(self.eaten_list.keys()[0][1] - self.y_pos)
-			return x_dist + y_dist
+			x_dist = abs(self.eaten_list[0][1][0] - self.x_pos)
+			y_dist = abs(self.eaten_list[1][1][1] - self.y_pos)
+			self.heuristic =  x_dist + y_dist
 		elif(State.heuristic == 1):
 			min_dist = len(maze) + len(maze[0])
-			for dot in self.eaten_list.keys():
-				x_dist = abs(dot[0] - self.x_pos)
-				y_dist = abs(dot[1] - self.y_pos)
-				if(x_dist + y_dist < min_dist):
-					min_dist = x_dist + y_dist
-			return min_dist
+			for pair in self.eaten_list:
+				if(pair[0]):
+					x_dist = abs(pair[1][0] - self.x_pos)
+					y_dist = abs(pair[1][1] - self.y_pos)
+					if(x_dist + y_dist < min_dist):
+						min_dist = x_dist + y_dist
+			self.heuristic =  min_dist
 		elif(State.heuristic == 2):
-			return self.dots_left
+			self.heuristic =  self.dots_left
+		elif(State.heuristic == 3):
+			min_dist = len(maze) + len(maze[0])
+			for pair in self.eaten_list:
+				if(pair[0]):
+					x_dist = abs(pair[1][0] - self.x_pos)
+					y_dist = abs(dot[1][1] - self.y_pos)
+					if(x_dist + y_dist < min_dist):
+						min_dist = x_dist + y_dist
+			self.heuristic =  self.dots_left + min_dist - 1
 		else:
 			min_dist = len(maze) + len(maze[0])
-			for dot in self.eaten_list.keys():
-				x_dist = abs(dot[0] - self.x_pos)
-				y_dist = abs(dot[1] - self.y_pos)
-				if(x_dist + y_dist < min_dist):
-					min_dist = x_dist + y_dist
-			return self.dots_left + min_dist - 1
+			for pair in self.eaten_list:
+				if(pair[0]):
+					x_dist = abs(pair[1][0] - self.x_pos)
+					y_dist = abs(pair[1][1] - self.y_pos)
+					if(x_dist + y_dist < min_dist):
+						min_dist = x_dist + y_dist
+			self.heuristic =  (self.dots_left * min_dist) / State.num_dots
 
 	def calcEvalFunc(self):
-		return self.calcHeuristic() + self.path_cost
+		return self.heuristic + self.path_cost
 
 	def isGoal(self):
 		if(self.dots_left):
@@ -60,16 +65,16 @@ class State:
 		if State.compareFunc:
 			return self.calcEvalFunc() < other.calcEvalFunc()
 		else:
-			return self.calcHeuristic() < other.calcHeuristic()
+			return self.heuristic < other.heuristic
 
 	def __gt__(self, other):
 		if State.compareFunc:
 			return self.calcEvalFunc() > other.calcEvalFunc()
 		else:
-			return self.calcHeuristic() > other.calcHeuristic()
+			return self.heuristic > other.heuristic
 
 	def __eq__(self, other):
-		return self.toString() == other.toString()
+		return self.id == other.id
 
 actions = [(-1,0),(0,-1),(1,0),(0,1)]
 
@@ -84,12 +89,13 @@ def DoActions(state, actionList):
 		if(char == ' ' or char == 'P'):
 			stateList.append(State(new_x, new_y, state.dots_left, state.eaten_list.copy(), state.path_cost + 1, state))
 		elif(char == '.'):
-			dic = state.eaten_list.copy()
+			elist = state.eaten_list.copy()
 			dots_left = state.dots_left
-			if(not dic[(new_x, new_y)]):
-				dots_left = dots_left - 1
-				dic[(new_x, new_y)] = 1
-			stateList.append(State(new_x,new_y, dots_left, dic, state.path_cost + 1, state))
+			for i in range(num_dots):
+				if(elist[i][1][0] == new_x and elist[i][1][1] == new_y):
+					elist[i] = (0, (new_x, new_y))
+					break
+			stateList.append(State(new_x,new_y, dots_left, elist, state.path_cost + 1, state))
 	
 	return stateList
 
@@ -103,56 +109,64 @@ maze = []
 for line in maze_file:
 	maze.append(list(line)[:len(line)-1])
 
-if(sys.argv[2].lower() == 'dfs'):
+option = sys.argv[2].lower()
+
+if(option == 'dfs'):
 	frontier = FrontierDFS()
-elif(sys.argv[2].lower() == 'bfs'):
+elif(option == 'bfs'):
 	frontier = FrontierBFS()
-elif(sys.argv[2].lower() == 'greedy'):
+elif(option == 'greedy'):
 	frontier = FrontierGreedy()
 	State.compareFunc = 0
-elif(sys.argv[2].lower() == 'a*'):
+elif(option == 'a*'):
 	frontier = FrontierAStar()
 	State.compareFunc = 1
 else:
-	print("Unrecognized search: " + sys.argv[2])
+	print("Unrecognized search: " + option)
 	sys.exit()
 
+write = sys.stdout.write
 for line in maze:
 	for c in line:
-		sys.stdout.write(c)
+		write(c)
 	print('')
 
 ans = string.digits + string.ascii_letters 
 
-start_state = State()
-
+num_dots = 0
+dots = []
+y_pos = 0
+x_pos = 0
 for row in range(len(maze)):
 	for col in range(len(maze[row])):
 		if(maze[row][col] == '.'):
-			start_state.eaten_list[(col, row)] = 0
-			start_state.dots_left = start_state.dots_left + 1
+			dots.append((1, (col, row)))
+			num_dots = num_dots + 1
 		elif(maze[row][col] == 'P'):
-			start_state.y_pos = row
-			start_state.x_pos = col
+			y_pos = row
+			x_pos = col
 
-print("Dots left: " + str(start_state.dots_left))
-for d in start_state.eaten_list.keys():
-	print("Dot: " + str(d))
-print("Start state: " + start_state.toString())
+start_state = State(x_pos, y_pos, num_dots, dots)
 
 # Set heuristic
 if(start_state.dots_left > 1):
-	State.heuristic = 3
+	State.heuristic = 1
+	State.num_dots = num_dots
 
 # Add initial state
 frontier.addState(start_state)
 nodes_expanded = 0
 path_cost = 0
 
+# Common functions:
+getState = frontier.getState
+isEmpty = frontier.isEmpty
+addState = frontier.addState
+
 # Start Search
-while not frontier.isEmpty():
+while not isEmpty():
 	# Get the next state
-	current_state = frontier.getState()
+	current_state = getState()
 
 	# Check if current state is goal state
 	if(current_state.isGoal()):
@@ -175,11 +189,11 @@ while not frontier.isEmpty():
 	# Check all four directions:
 	new_states = DoActions(current_state, actions)
 	for state in new_states:
-		frontier.addState(state)
+		addState(state)
 
 for line in maze:
 	for c in line:
-		sys.stdout.write(c)
+		write(c)
 	print('')
 
 print('Path cost: ' + str(path_cost))
