@@ -45,7 +45,7 @@ class State:
 
 		i = 0
 		for i in range(len(eaten_list)):
-			if(eaten_list[i][1] == 0):
+			if(eaten_list[i][0] == 0):
 				Q.append((maxsize, i+1))
 
 		while Q:
@@ -72,7 +72,7 @@ class State:
 
 		summation = 0
 		for d in dist:
-			if(d != sys.maxsize):
+			if(d != maxsize):
 				summation = summation + d
 		return	summation
 
@@ -155,7 +155,7 @@ class State:
 				y_dist = abs(self.eaten_list[0][1][1] - self.y_pos)
 				self.heuristic =  x_dist + y_dist
 			else:
-				self.heuristic =  self.minSpanTree()
+				self.heuristic = self.dijkstra()  #self.minSpanTree()
 		return self.heuristic
 
 	def calcEvalFunc(self):
@@ -257,7 +257,7 @@ for row in range(len(maze)):
 
 # Set heuristic
 if(num_dots > 1):
-	State.heuristic = 1
+	State.heuristic = 2
 	State.num_dots = num_dots
 else:
 	State.heuristic = 0
@@ -274,20 +274,29 @@ getState = frontier.getState
 isEmpty = frontier.isEmpty
 addState = frontier.addState
 
+repeat = {}
+repeat[start_state.id] = True
+
 # Start Search
 while not isEmpty():
 	# Get the next state
 	current_state = getState()
+	#if(current_state.id in repeat):
+	#	print("Repeated state detected: " + current_state.id)
+	#repeat[current_state.id] = True;
 
 	'''for y in range(len(maze)):
 		for x in range(len(maze[row])):
+			tup = (1, (x, y))
 			if(y == current_state.y_pos and x == current_state.x_pos):
 				write('X')
+			elif(tup in current_state.eaten_list):
+				write(' ')
 			else:
 				write(maze[y][x])
 		print('')
 
-	print("Heuristic: " + str(current_state.getHeuristic()))
+	print("Heuristic: " + str(current_state.heuristic))
 	input()'''
 
 	# Check if current state is goal state
@@ -295,14 +304,21 @@ while not isEmpty():
 		path_cost = current_state.path_cost
 		target = start_state.dots_left - 1
 
-		while current_state:
-			if(start_state.dots_left == 1):
-				maze[current_state.y_pos][current_state.x_pos] = '.'
-			elif(maze[current_state.y_pos][current_state.x_pos] == '.'):
-				maze[current_state.y_pos][current_state.x_pos] = ans[target]
-				target = target - 1
+		parent = current_state.parent
+		child = current_state
 
-			current_state = current_state.parent
+		while parent:
+			if(start_state.dots_left == 1):
+				maze[child.y_pos][child.x_pos] = '.'
+			elif(maze[child.y_pos][child.x_pos] == '.'):
+				for i in range(num_dots):
+					if(parent.eaten_list[i][0] == 0 and child.eaten_list[i][0] == 1):
+						maze[child.y_pos][child.x_pos] = ans[target]
+						target = target - 1
+						break
+
+			child = parent
+			parent = parent.parent
 		break
 
 	# Update expanded state counter

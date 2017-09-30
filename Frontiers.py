@@ -107,7 +107,7 @@ class FrontierAStar:
 
 	def getState(self):
 		if(self.f):
-			s = self.f.pop(0)
+			s = FrontierAStar.heappop(self.f)
 			self.explored[s.id] = True
 			return s
 		else:
@@ -118,42 +118,17 @@ class FrontierAStar:
 		# Check for repeats
 		if(state.id in self.explored):
 			return
-
-		f = self.f
-
-		start = 0
-		end = len(f)-1
-		index = end//2
-		if(start <= end):
-			while start < end and not state == f[index]:
-				if(state < f[index]):
-					end = index-1
-				else:
-					start = index+1
-				index = (start + end)//2
-
-			if(state == f[index]):
-				if(f[index].path_cost > state.path_cost):
-					f[index] = state
-					f.sort()
-					return
-				
-		f.insert(index, state)
-
-	def isStateRepeated(self, state):
-		if(state.id in self.explored):
-			return True
 		try:
 			i = self.f.index(state)
 			if self.f[i].path_cost > state.path_cost:
 				self.f[i] = state
 				FrontierAStar.heapify(self.f)
-				return True
-
+			return
 		except ValueError:
-			return False
+			pass
 
-		return False
+		# Add state to frontier
+		FrontierAStar.heappush(self.f, state)
 
 	def isEmpty(self):
 		return not self.f
