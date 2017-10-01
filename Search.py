@@ -29,7 +29,6 @@ class State:
 		self.path_cost = pc
 		self.parent = p
 
-		#self.calcHeuristic()
 		self.heuristic = None
 		self.id = str(x) + ' ' + str(y) + ' ' + str.join('', map(lambda x: str(x[0]), el))
 
@@ -38,6 +37,7 @@ class State:
 		num_nodes = State.num_dots + 1
 		Q = []
 		dist = [maxsize]*num_nodes
+		prev = [-1]*num_nodes
 		dist[0] = 0
 		eaten_list = self.eaten_list
 
@@ -62,6 +62,7 @@ class State:
 							alt = u_dist + abs(eaten_list[u_in-1][1][0] - eaten_list[i-1][1][0]) + abs(eaten_list[u_in-1][1][1] - eaten_list[i-1][1][1])
 						if(alt < dist[i]):
 							dist[i] = alt
+							prev[i] = u_in
 				i = i + 1
 
 			for i in range(len(Q)):
@@ -70,17 +71,19 @@ class State:
 
 			heapq.heapify(Q)
 
+
+
 		summation = 0
-		for d in dist:
-			if(d != maxsize):
-				summation = summation + d
-		return	summation
+		for i in range(num_nodes):
+			if(prev[i] != -1):
+				summation = summation + dist[i] - dist[prev[i]]
+		return summation
 
 
 	def minSpanTree(self):
 		set_id = 0
 		num_edges = 0
-		dist = 0
+		dist = []
 		num_nodes = self.dots_left + 1
 		sets = [None] * num_nodes
 		i = 0
@@ -118,35 +121,16 @@ class State:
 			b = sets[b_in]
 			if(root(sets, a) != root(sets, b)):
 				num_edges = num_edges + 1
-				dist = dist + edge[0]
+				heapq.heappush(dist, edge[0])
 				union1(sets, a, b)
 
-			'''
-			if(a is None and b is None):
-				sets[a_in] = set_id
-				sets[b_in] = set_id
-				set_id = set_id + 1
-				dist = dist + edge[0]
-				num_edges = num_edges + 1
-				continue
-			if(a is None):
-				sets[a_in] = b
-				dist = dist + edge[0]
-				num_edges = num_edges + 1
-				continue
-			if(b is None):
-				sets[b_in] = a
-				dist = dist + edge[0]
-				num_edges = num_edges + 1
-				continue
-			if(a != b):
-				for i in range(num_nodes):
-					if(sets[i] == b):
-						sets[i] = a
-				dist = dist + edge[0]
-				num_edges = num_edges + 1'''
+		d = 0
+		scale = 0
+		while dist:
+			d = d + heapq.heappop(dist) - scale
+			scale = scale + 1
 
-		return dist
+		return d
 
 	def calcHeuristic(self):
 		if(self.heuristic is None):
@@ -155,7 +139,7 @@ class State:
 				y_dist = abs(self.eaten_list[0][1][1] - self.y_pos)
 				self.heuristic =  x_dist + y_dist
 			else:
-				self.heuristic = self.dijkstra()  #self.minSpanTree()
+				self.heuristic = self.dijkstra() # self.minSpanTree()
 		return self.heuristic
 
 	def calcEvalFunc(self):
@@ -296,8 +280,13 @@ while not isEmpty():
 				write(maze[y][x])
 		print('')
 
-	print("Heuristic: " + str(current_state.heuristic))
-	input()'''
+	'''
+	#if(current_state.x_pos == 8 and current_state.y_pos == 10):
+	#	print("Heuristic at 13, 5: " + str(current_state.heuristic) + " Path cost: " + str(current_state.path_cost))
+	#	input()
+	#if(current_state.x_pos == 7 and current_state.y_pos == 11):
+	#	print("Heuristic at 7, 11: " + str(current_state.heuristic) + " Path cost: " + str(current_state.path_cost))
+	#	input()
 
 	# Check if current state is goal state
 	if(current_state.isGoal()):
