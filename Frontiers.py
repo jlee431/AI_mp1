@@ -8,26 +8,33 @@ class FrontierDFS:
 		self.f = []
 		self.explored = {}
 
+	# Returns the next state from the frontier
 	def getState(self):
 		if(self.f):
+			# Pop state off of stack
 			s = self.f.pop()
 			self.explored[s.id] = True
 			return s
 		else:
 			return None
 
+	# Attempts to add state to frontier
 	def addState(self, state):
+		# Check for repeated state
 		if(not self.isStateRepeated(state)):
+			# Push state to top of stack
 			self.f.append(state)
 
+	# Checks if state has been repeated
 	def isStateRepeated(self, state):
+		# Check if state has been explored
 		if(state.id in self.explored):
 			return True
-		try:
-			self.f.index(state)
-			return True
-		except ValueError:
-			return False
+
+		# Check if state is in the frontier
+		for s in self.f:
+			if(s.id == state.id):
+				return True
 
 	def isEmpty(self):
 		return not self.f
@@ -38,21 +45,29 @@ class FrontierBFS:
 		self.f = []
 		self.explored = {}
 
+	# Returns the next state from the frontier
 	def getState(self):
 		if(self.f):
+			# Pops state from front of queue
 			s = self.f.pop(0)
 			self.explored[s.id] = True
 			return s
 		else:
 			return None
 
+	# Attempts to add state to frontier
 	def addState(self, state):
 		if(not self.isStateRepeated(state)):
+			# Pushes state to back of queue
 			self.f.append(state)
 
+	# Checks if state has been repeated
 	def isStateRepeated(self, state):
+		# Check if state has been explored
 		if(state.id in self.explored):
 			return True
+
+		# Check if state is in the frontier
 		for s in self.f:
 			if(s.id == state.id):
 				return True
@@ -67,24 +82,30 @@ class FrontierGreedy:
 		self.f = []
 		self.explored = {}
 
+	# Returns the next state from the frontier
 	def getState(self):
 		if(self.f):
+			# Pop state from priority queue
 			s = heapq.heappop(self.f)
 			self.explored[s.id] = True
 			return s
 		else:
 			return None
 
+	# Attempts to add state to frontier
 	def addState(self, state):
+		# Check if state has been explored
 		if(state.id in self.explored):
 			return
+
+		# Check if state is in frontier
 		try:
 			i = self.f.index(state)
 			return
 		except ValueError:
 			pass
 
-		# Add state to frontier
+		# Add state to priority queue
 		FrontierAStar.heappush(self.f, state)
 
 	def isEmpty(self):
@@ -101,19 +122,24 @@ class FrontierAStar:
 		self.f = []
 		self.explored = {}
 
+	# Returns the next state from the frontier
 	def getState(self):
 		if(self.f):
+			# Pop state from priority queue
 			s = FrontierAStar.heappop(self.f)
 			self.explored[s.id] = True
 			return s
 		else:
 			return None
 
+	# Attempts to add state to frontier
 	def addState(self, state):
 
-		# Check for repeats
+		# Check if state has been explored
 		if(state.id in self.explored):
 			return
+
+		# Check if state is in frontier
 		try:
 			i = self.f.index(state)
 			if self.f[i].path_cost > state.path_cost:
@@ -123,7 +149,7 @@ class FrontierAStar:
 		except ValueError:
 			pass
 
-		# Add state to frontier
+		# Add state to priority queue
 		FrontierAStar.heappush(self.f, state)
 
 	def isEmpty(self):

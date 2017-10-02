@@ -3,42 +3,69 @@ import string
 import heapq
 from Frontiers import *
 
-maxsize = 10000
+# Stores distances between two points in the maze
 distDictionary = {}
 
+# Calculates the distance between two points in the maze
 def calcDist(maze, start_x, start_y, goal_x, goal_y):
 
+	# No need to calculate distance from a point to itself
 	if(start_x == goal_x and start_y == goal_y):
 		return 0
 
+	# Check if this distance has already been calculated
 	tup = ((start_x,start_y),(goal_x, goal_y))
 	if(tup in distDictionary):
 		return distDictionary[tup]
 
+	# Set the goal in the maze and create the empty frontier
 	maze[goal_y][goal_x] = '.'
 	f = FrontierAStar()
 
+	# Save state values
+	h = State.heuristic
+	n = State.num_dots
+	c = State.compareFunc
+
+	# Perform the A* search
 	retval = search(maze, f, 1, [(0, (goal_x, goal_y))], start_x, start_y, False)
 
+	# Reset state values
+	State.heuristic = h
+	State.num_dots = n
+	State.compareFunc = c
+
+	# Reset maze to initial layout
 	maze[goal_y][goal_x] = ' '
+
+	# Save this distance in dictionary
 	distDictionary[tup] = retval[0]
 	distDictionary[((goal_x, goal_y),(start_x,start_y))] = retval[0]
+	
 	return retval[0]
 
+# Finds the root of node x in disjoint set representation
 def root(sets, x):
 	while sets[x] != x:
 		sets[x] = sets[sets[x]]
 		x = sets[x]
 	return x
 
+# Unites the set containing x with the set containing y
 def union1(sets, x, y):
 	p = root(sets, x)
 	q = root(sets, y)
 	sets[p] = sets[q]
 
+# The state representation class for the search algorithm
 class State:
+	# Distinguishes between Greedy and A*
 	compareFunc = 0
+
+	# Determines which heuristic to use
 	heuristic = None
+
+	# The initial number of dots in the maze
 	num_dots = 0
 
 	def __init__(self, x, y, d, el, pc = 0, p = None):
@@ -50,114 +77,133 @@ class State:
 		self.parent = p
 
 		self.heuristic = None
+
+		# Creates id unique to this state based on x position, y position, and which dots remain
 		self.id = str(x) + ' ' + str(y) + ' ' + str.join('', map(lambda x: str(x[0]), el))
 
-	def dijkstra(self):
-		num_nodes = State.num_dots + 1
-		Q = []
-		dist = [maxsize]*num_nodes
-		prev = [-1]*num_nodes
-		dist[0] = 0
-		eaten_list = self.eaten_list
+	def minSpanTree(self):
+		# Construct list of nodes
+		node_list = []
+		for pair in self.eaten_list:
+			# If dot exists, add it as a node
+			if pair[0] == 0:
+				node_list.append((pair[1][0], pair[1][1]))
 
-		# Save state values
-		h = State.heuristic
-		n = State.num_dots
+		# Add the current position as a node
+		node_list.append((self.x_pos, self.y_pos))
+		num_nodes = len(node_list)
 
-		Q.append((0, 0))
+		# Create priority queue of edges
+		edge_heap = [None] * ((num_nodes * (num_nodes-1)) // 2)
+		edge_index = 0
+		for node1_index in range(num_nodes):
+			for node2_index in range(node1_index+1, num_nodes):
+				# Calculate the distance between the two points in the maze
+				dist = calcDist(blank_maze, node_list[node1_index][0], node_list[node1_index][1], node_list[node2_index][0], node_list[node2_index][1])
+				edge_heap[edge_index] = ((dist, (node1_index, node2_index)))
+				edge_index = edge_index + 1
 
-		i = 0
-		for i in range(len(eaten_list)):
-			if(eaten_list[i][0] == 0):
-				Q.append((maxsize, i+1))
+		# Sort edges by weight
+		edge_heap.sort()
 
-		while Q:
-			u = Q.pop(0)
-			u_in = u[1]
-			u_dist = u[0]
-			i = 0
-			while i < num_nodes:
-				if(i != u_in):
-					if(i != 0 and eaten_list[i-1][0] == 0):
-						if(u_in == 0):
-							alt = calcDist(blank_maze, self.x_pos, self.y_pos, eaten_list[i-1][1][0], eaten_list[i-1][1][1])
-						else:
-							if(prev[u_in] != i and prev[i] != u_in):
-								alt = calcDist(blank_maze, eaten_list[u_in-1][1][0], eaten_list[u_in-1][1][1], eaten_list[i-1][1][0], eaten_list[i-1][1][1])
-							else:
-								alt = maxsize
-						if(alt < dist[i]):
-							dist[i] = alt
-							prev[i] = u_in
-				i = i + 1
+		# Create disjoint set representation
+		sets = [i for i in range(num_nodes)]
+		edges_in_tree = 0
+		edge_index = 0
+		tree_weight = 0
 
-			for i in range(len(Q)):
-				index = Q[i][1]
-				Q[i] = (dist[index], index)
+		# Add edges to tree from smallest to largest
+		while edges_in_tree < num_nodes - 1:
+			edge = edge_heap[edge_index]
+			edge_index = edge_index + 1
 
-		State.heuristic = h
-		State.num_dots = n
+			edge_weight = edge[0]
+			node1 = edge[1][0]
+			node2 = edge[1][1]
 
-		summation = 0
-		for i in range(num_nodes):
-			if(prev[i] != -1):
-				summation = summation + dist[i]
-		return summation
+			# Check if node1 and node2 are already connected
+			if(root(sets, node1) != root(sets, node2)):
+				# Connect add edge node1=>node2 to tree
+				edges_in_tree = edges_in_tree + 1
+				tree_weight = tree_weight + edge_weight
+				union1(sets, node1, node2)
 
+		# Return the total weight of edges in the tree
+		return tree_weight
+
+	# Calculates the heuristic for this state
 	def calcHeuristic(self):
+		# Check if the calculation has already been done
 		if(self.heuristic is None):
 			if(State.heuristic == 0):
+				# Heuristic 1: Manhattan Distance to the first dot
 				x_dist = abs(self.eaten_list[0][1][0] - self.x_pos)
 				y_dist = abs(self.eaten_list[0][1][1] - self.y_pos)
 				self.heuristic =  x_dist + y_dist
 			else:
-				self.heuristic = self.dijkstra()
+				# Heuristic 2: Total weight of minimum spanning tree
+				self.heuristic = self.minSpanTree()
 		return self.heuristic
 
+	# Calculates the evaluation function for A* Search
 	def calcEvalFunc(self):
 		self.calcHeuristic()
 		return self.heuristic + self.path_cost
 
+	# Determines whether this state is a goal state
 	def isGoal(self):
 		if(self.dots_left):
 			return False
 		return True;
 
+	# Uses evaluation function/heuristic for state comparision
 	def __lt__(self, other):
 		if State.compareFunc:
 			return self.calcEvalFunc() < other.calcEvalFunc()
 		else:
 			return self.calcHeuristic() < other.calcHeuristic()
 
+	# Uses evaluation function/heuristic for state comparision
 	def __gt__(self, other):
 		if State.compareFunc:
 			return self.calcEvalFunc() > other.calcEvalFunc()
 		else:
 			return self.calcHeuristic() < other.calcHeuristic()
 
+	# Uses state id to check for equality
 	def __eq__(self, other):
 		return self.id == other.id
 
+# List of actions that the agent can perform (Only movement)
 actions = [(-1,0),(0,-1),(1,0),(0,1)]
 
+# Attemps to perform all actions on state; adds children to frontier
 def DoActions(maze, frontier, dot_map, state, actionList):
 
 	for action in actionList:
+		# Determine the new position
 		new_x = state.x_pos + action[0]
 		new_y = state.y_pos + action[1]
 
 		char = maze[new_y][new_x]
+
+		# Check if action is valid
 		if(char == ' ' or char == 'P'):
 			frontier.addState(State(new_x, new_y, state.dots_left, state.eaten_list.copy(), state.path_cost + 1, state))
 		elif(char == '.'):
+			# Update the list of dots
 			elist = state.eaten_list.copy()
 			dots_left = state.dots_left
 			i = dot_map[(new_x, new_y)]
+
+			# Only update if this dot has not been collected before
 			if(elist[i][0] == 0 and elist[i][1][0] == new_x and elist[i][1][1] == new_y):
 				elist[i] = (1, (new_x, new_y))
 				dots_left = dots_left - 1
+
 			frontier.addState(State(new_x,new_y, dots_left, elist, state.path_cost + 1, state))
 
+# Performs the search over maze starting from x_pos, y_pos
 def search(maze, frontier, num_dots, dots, x_pos, y_pos, alter_maze = True):
 
 	# Set heuristic
@@ -168,6 +214,7 @@ def search(maze, frontier, num_dots, dots, x_pos, y_pos, alter_maze = True):
 		State.heuristic = 0
 		State.num_dots = 1
 
+	# Initialize mapping from dot coordinates to dot index
 	dot_map = {}
 	for i in range(num_dots):
 		dot_map[(dots[i][1][0],dots[i][1][1])] = i
@@ -182,7 +229,7 @@ def search(maze, frontier, num_dots, dots, x_pos, y_pos, alter_maze = True):
 		# Get the next state
 		current_state = frontier.getState()
 
-		# Check if current state is goal state
+		# Check if current state is a goal state
 		if(current_state.isGoal()):
 			path_cost = current_state.path_cost
 			target = num_dots - 1
@@ -190,12 +237,17 @@ def search(maze, frontier, num_dots, dots, x_pos, y_pos, alter_maze = True):
 			parent = current_state.parent
 			child = current_state
 
+			# Update the maze with the path
 			if(alter_maze):
 				while parent:
 					if(num_dots == 1):
+						# Trace the path taken with '.'
 						maze[child.y_pos][child.x_pos] = '.'
+
 					elif(maze[child.y_pos][child.x_pos] == '.'):
+						# Number the dots in the order they were collected
 						for i in range(num_dots):
+							# Only mark this dot if child was the state that collected it 
 							if(parent.eaten_list[i][0] == 0 and child.eaten_list[i][0] == 1):
 								maze[child.y_pos][child.x_pos] = ans[target]
 								target = target - 1
@@ -220,6 +272,7 @@ if(len(sys.argv) !=3):
 
 maze_file = open(sys.argv[1], 'r')
 
+# Load maze
 maze = []
 blank_maze = []
 for line in maze_file:
@@ -231,6 +284,7 @@ for line in maze_file:
 
 option = sys.argv[2].lower()
 
+# Set main search type
 if(option == 'dfs'):
 	frontier = FrontierDFS()
 elif(option == 'bfs'):
@@ -245,12 +299,15 @@ else:
 	print("Unrecognized search: " + option)
 	sys.exit()
 
+# Open output file
 filename = "soln_" + sys.argv[1][:-4] + "_" + option + ".txt"
 file = open(filename, "w+")
 write = file.write
 
+# List of characters for multiple dot searches
 ans = string.digits + string.ascii_letters 
 
+# Initialize starting values
 num_dots = 0
 dots = []
 y_pos = 0
@@ -265,13 +322,10 @@ for row in range(len(maze)):
 			y_pos = row
 			x_pos = col
 
-for line in blank_maze:
-	for c in line:
-		write(c)
-	write('\n')
-
+# Perform search
 retval = search(maze, frontier, num_dots, dots, x_pos, y_pos)
 
+# Write maze solution, path cost, and nodes expanded 
 for line in maze:
 	for c in line:
 		write(c)
@@ -279,4 +333,4 @@ for line in maze:
 
 write('Path cost: ' + str(retval[0]) + '\n')
 write('Nodes expanded: ' + str(retval[1]))
-#file.close()
+file.close()
