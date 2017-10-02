@@ -24,14 +24,10 @@ class FrontierDFS:
 		if(state.id in self.explored):
 			return True
 		try:
-			self.f.index(s)
+			self.f.index(state)
 			return True
 		except ValueError:
 			return False
-		#for s in self.f:
-		#	if(s.id == state.id):
-		#		return True
-		#return False
 
 	def isEmpty(self):
 		return not self.f
@@ -80,16 +76,16 @@ class FrontierGreedy:
 			return None
 
 	def addState(self, state):
-		if(not self.isStateRepeated(state)):
-			heapq.heappush(self.f, state)
-
-	def isStateRepeated(self, state):
 		if(state.id in self.explored):
-			return True
-		for s in self.f:
-			if(s.id == state.id):
-				return True
-		return False
+			return
+		try:
+			i = self.f.index(state)
+			return
+		except ValueError:
+			pass
+
+		# Add state to frontier
+		FrontierAStar.heappush(self.f, state)
 
 	def isEmpty(self):
 		return not self.f
