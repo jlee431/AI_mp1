@@ -18,11 +18,6 @@ def calcDist(maze, start_x, start_y, goal_x, goal_y):
 	maze[goal_y][goal_x] = '.'
 	f = FrontierAStar()
 
-	#print('Startx ' + str(start_x))
-	#print('Starty ' + str(start_y))
-	#print('Goalx ' + str(goal_x))
-	#print('Goaly ' + str(goal_y))
-
 	retval = search(maze, f, 1, [(0, (goal_x, goal_y))], start_x, start_y, False)
 
 	maze[goal_y][goal_x] = ' '
@@ -57,50 +52,11 @@ class State:
 		self.heuristic = None
 		self.id = str(x) + ' ' + str(y) + ' ' + str.join('', map(lambda x: str(x[0]), el))
 
-	'''def testFunc(self):
-		distances = [None]*num_dots
-		closest = [None]*num_dots
-
-		h = State.heuristic
-		n = State.num_dots
-
-		closest_to_player = maxsize
-
-		for d in range(n):
-			pair = self.eaten_list[d]
-			if(pair[0] == 0):
-					distances[d] = calcDist(blank_maze, self.x_pos, self.y_pos, pair[1][0], pair[1][1])
-					if(distances[d] < closest_to_player):
-						closest_to_player = distances[d]
-					closest[d] = -1
-					for i in range(n):
-						neigh = self.eaten_list[i]
-						if(neigh[0] == 0 and neigh != pair):
-							dist = calcDist(blank_maze, neigh[1][0], neigh[1][1], pair[1][0], pair[1][1])
-							if(dist < distances[d]):
-								distances[d] = dist
-								closest[d] = i
-
-		State.heuristic = h
-		State.num_dots = n
-
-		player_nearest = 0
-		for i in range(num_dots):
-			if(closest[i] == -1):
-				player_nearest = player_nearest + distances[i]
-
-		if(player_nearest == 0):
-			return closest_to_player
-		else:
-			return player_nearest'''
-
-
 	def dijkstra(self):
 		num_nodes = State.num_dots + 1
 		Q = []
 		dist = [maxsize]*num_nodes
 		prev = [-1]*num_nodes
-		layers_from_player = [0]*num_nodes
 		dist[0] = 0
 		eaten_list = self.eaten_list
 
@@ -125,17 +81,14 @@ class State:
 					if(i != 0 and eaten_list[i-1][0] == 0):
 						if(u_in == 0):
 							alt = calcDist(blank_maze, self.x_pos, self.y_pos, eaten_list[i-1][1][0], eaten_list[i-1][1][1])
-							#alt = abs(self.x_pos - eaten_list[i-1][1][0]) + abs(self.y_pos - eaten_list[i-1][1][1]) 
 						else:
 							if(prev[u_in] != i and prev[i] != u_in):
 								alt = calcDist(blank_maze, eaten_list[u_in-1][1][0], eaten_list[u_in-1][1][1], eaten_list[i-1][1][0], eaten_list[i-1][1][1])
-								#alt = abs(eaten_list[u_in-1][1][0] - eaten_list[i-1][1][0]) + abs(eaten_list[u_in-1][1][1] - eaten_list[i-1][1][1])
 							else:
 								alt = maxsize
 						if(alt < dist[i]):
 							dist[i] = alt
 							prev[i] = u_in
-							layers_from_player[i] = layers_from_player[u_in] + 1
 				i = i + 1
 
 			for i in range(len(Q)):
@@ -229,16 +182,6 @@ def search(maze, frontier, num_dots, dots, x_pos, y_pos, alter_maze = True):
 		# Get the next state
 		current_state = frontier.getState()
 
-		'''if(alter_maze == True):
-			for y in range(len(maze)):
-				for x in range(len(maze[row])):
-					if(y == current_state.y_pos and x == current_state.x_pos):
-						write('X')
-					else:
-						write(maze[y][x])
-				print('')
-			input()'''
-
 		# Check if current state is goal state
 		if(current_state.isGoal()):
 			path_cost = current_state.path_cost
@@ -303,9 +246,8 @@ else:
 	sys.exit()
 
 filename = "soln_" + sys.argv[1][:-4] + "_" + option + ".txt"
-#file = open(filename, "w+")
-#write = file.write
-write = sys.stdout.write
+file = open(filename, "w+")
+write = file.write
 
 ans = string.digits + string.ascii_letters 
 
