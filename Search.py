@@ -1,7 +1,9 @@
 import sys
 import string
 import heapq
+from imageio import *
 from Frontiers import *
+import numpy as np
 
 # Stores distances between two points in the maze
 distDictionary = {}
@@ -189,10 +191,10 @@ def DoActions(maze, frontier, dot_map, state, actionList):
 
 		# Check if action is valid
 		if(char == ' ' or char == 'P'):
-			frontier.addState(State(new_x, new_y, state.dots_left, state.eaten_list.copy(), state.path_cost + 1, state))
+			frontier.addState(State(new_x, new_y, state.dots_left, state.eaten_list[:], state.path_cost + 1, state))
 		elif(char == '.'):
 			# Update the list of dots
-			elist = state.eaten_list.copy()
+			elist = state.eaten_list[:]
 			dots_left = state.dots_left
 			i = dot_map[(new_x, new_y)]
 
@@ -202,6 +204,40 @@ def DoActions(maze, frontier, dot_map, state, actionList):
 				dots_left = dots_left - 1
 
 			frontier.addState(State(new_x,new_y, dots_left, elist, state.path_cost + 1, state))
+
+def addFrame(frame_list, maze, dot_map, state):
+	square_size = 10
+	frame = np.zeros((maze_height*square_size, maze_width*square_size, 3), dtype=np.uint8)
+
+	y = 0
+	x = 0
+	for y in range(maze_height):
+		for x in range(maze_width):
+			if(x == state.x_pos and y == state.y_pos):
+				center = square_size//2
+				for i in range(square_size):
+					for j in range(square_size):
+							i_dist = abs(i - center)
+							j_dist = abs(j - center)
+							if(i_dist + j_dist < 3):
+								frame[square_size*y+i][square_size*x+j] = [0,255,0]
+							else:
+								frame[square_size*y+i][square_size*x+j] = [0,200,0]
+			elif(maze[y][x] == '.' or maze[y][x] in ans):
+				try:
+					dot_index = dot_map[(x, y)]
+					if(state.eaten_list[dot_index][0] == 0):
+						for i in range(square_size):
+							for j in range(square_size):
+								frame[square_size*y+i][square_size*x+j] = [255,255,255]
+				except KeyError:
+						pass
+			elif(maze[y][x] == '%'):
+				for i in range(square_size):
+					for j in range(square_size):
+						frame[square_size*y+i][square_size*x+j] = [255,0,0]
+
+	frame_list.insert(0, frame)
 
 # Performs the search over maze starting from x_pos, y_pos
 def search(maze, frontier, num_dots, dots, x_pos, y_pos, alter_maze = True):
@@ -237,9 +273,14 @@ def search(maze, frontier, num_dots, dots, x_pos, y_pos, alter_maze = True):
 			parent = current_state.parent
 			child = current_state
 
+			frames = []
+
 			# Update the maze with the path
 			if(alter_maze):
 				while parent:
+					# Add frame
+					addFrame(frames, maze, dot_map, child)
+
 					if(num_dots == 1):
 						# Trace the path taken with '.'
 						maze[child.y_pos][child.x_pos] = '.'
@@ -255,6 +296,8 @@ def search(maze, frontier, num_dots, dots, x_pos, y_pos, alter_maze = True):
 
 					child = parent
 					parent = parent.parent
+				addFrame(frames, maze, dot_map, child)
+				mimwrite(animation_name, frames)
 			break
 
 		# Update expanded state counter
@@ -282,6 +325,9 @@ for line in maze_file:
 	maze.append(line_list)
 	blank_maze.append(line_list[:])
 
+maze_height = len(maze)
+maze_width = len(maze[0])
+
 option = sys.argv[2].lower()
 
 # Set main search type
@@ -301,6 +347,7 @@ else:
 
 # Open output file
 filename = "soln_" + sys.argv[1][:-4] + "_" + option + ".txt"
+animation_name = "animations\soln_" + sys.argv[1][:-4] + "_" + option + ".gif"
 file = open(filename, "w+")
 write = file.write
 
